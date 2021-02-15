@@ -1,39 +1,38 @@
 import face_recognition
 import cv2
 import numpy as np
-import os
-
-# This is a demo of running face recognition on live video from your webcam. It's a little more complicated than the
-# other example, but it includes some basic performance tweaks to make things run a lot faster:
-#   1. Process each video frame at 1/4 resolution (though still display it at full resolution)
-#   2. Only detect faces in every other frame of video.
-
-# PLEASE NOTE: This example requires OpenCV (the `cv2` library) to be installed only to read from your webcam.
-# OpenCV is *not* required to use the face_recognition library. It's only required if you want to run this
-# specific demo. If you have trouble installing it, try any of the other demos that don't require it instead.
+import os, json
+from os import path
+import pickle
 
 # Get a reference to webcam #0 (the default one)
 video_capture = cv2.VideoCapture(0)
-print("step 1")
+
 # Create arrays of known face encodings and their names
 known_face_encodings = []
 known_face_names = []
-# Loading sample pictures to recognize employee.
-for emp_pic in os.listdir('employee-pics'):
-    input_image = face_recognition.load_image_file('employee-pics/'+emp_pic)
-    encoded_img = face_recognition.face_encodings(input_image)
-    if encoded_img:
-        known_face_encodings.append(encoded_img[0])
-        known_face_names.append(emp_pic)
-print("step 2")
-# stroing encded file in a single file
-encoding_file = open('encoding_emp.txt', "wb")
-encoding_file.write(known_face_encodings)
-encoding_file.close()
-encoding_file = open('emp_names.txt', "wb")
-encoding_file.write(known_face_names)
-encoding_file.close()
-# Initialize some variables
+if not path.exists('encoding_emp.dat'):
+    # Loading sample pictures to recognize employee.
+    for emp_pic in os.listdir('employee-pics'):
+        input_image = face_recognition.load_image_file('employee-pics/'+emp_pic)
+        encoded_img = face_recognition.face_encodings(input_image)
+        if encoded_img:
+            known_face_encodings.append(encoded_img[0])
+            known_face_names.append(emp_pic)
+    # storing encoded list in a single file
+    with open('encoding_emp.dat', 'wb') as face_encode_file:
+        pickle.dump(known_face_encodings, face_encode_file)
+    with open('emp_names.dat', 'wb') as emp_name_file:
+        pickle.dump(known_face_names, emp_name_file)
+else:
+    with open('encoding_emp.dat', 'rb') as face_encodes:
+        known_face_encodings = pickle.load(face_encodes)
+        known_face_encodings = np.array(list(known_face_encodings))
+    with open('emp_names.dat', 'rb') as face_names:
+        known_face_names = pickle.load(face_names)
+        known_face_names = np.array(list(known_face_names))
+
+# Initialize live face recognition variables
 face_locations = []
 face_encodings = []
 face_names = []
@@ -41,7 +40,6 @@ process_this_frame = True
 match_found = False
 
 while process_this_frame:
-    print("step 3")
     # Grab a single frame of video
     ret, frame = video_capture.read()
 
@@ -78,14 +76,14 @@ while process_this_frame:
                 face_names.append(name)
                 match_found = True
                 print(name)
-                # break
+                break
 
     process_this_frame = not process_this_frame
     # Display the resulting image
     cv2.imshow('Video', frame)
 
     # quit on match!
-    if match_found or cv2.waitKey(1) & 0xFF == ord('q'):
+    if match_found:
         break
 
     # Release handle to the webcam
