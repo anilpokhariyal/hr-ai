@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, request, redirect
 from flask import render_template
 import face_recognition
 import cv2
@@ -92,13 +92,14 @@ def recognize_cam_face():
                     print(emp)
                     break
 
-        process_this_frame = not process_this_frame
         # Display the resulting image
         cv2.imshow('Video', frame)
 
         # quit on match!
         if match_found:
             break
+        else:
+            process_this_frame = not process_this_frame
 
     # Release handle to the webcam
     video_capture.release()
@@ -109,14 +110,16 @@ def recognize_cam_face():
 
 @app.route('/')
 def index():
-    # emp_id = recognize_cam_face()
-    # if emp_id:
-    #     return emp_id
-
     return render_template('signin.html', activity=False)
 
 
 @app.route('/activity-ai')
 def activity_ai():
-    emp_id = recognize_cam_face()
-    return render_template('signin.html', activity=True, emp_id=emp_id)
+    image_name = recognize_cam_face()
+    from_url = request.args.get('from',None)
+    emp_id = 0
+    if from_url:
+        if image_name:
+            emp_id = image_name.split('.')[0]
+        return redirect(from_url+'?emp_id='+str(emp_id))
+    return render_template('signin.html', activity=True, emp_id=image_name)
