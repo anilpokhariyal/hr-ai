@@ -1,4 +1,5 @@
 from flask import Flask
+from flask import render_template
 import face_recognition
 import cv2
 import numpy as np
@@ -108,8 +109,14 @@ def recognize_cam_face():
 
 @app.route('/')
 def index():
-    emp_id = recognize_cam_face()
-    if emp_id:
-        return emp_id
+    # emp_id = recognize_cam_face()
+    # if emp_id:
+    #     return emp_id
 
-    return "No match found."
+    return render_template('signin.html', activity=False)
+
+
+@app.route('/activity-ai')
+def activity_ai():
+    emp_id = recognize_cam_face()
+    return render_template('signin.html', activity=True, emp_id=emp_id)
