@@ -1,2 +1,4 @@
 /employee-pics
+/venv
+/__pycache__
 *.dat
