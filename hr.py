@@ -69,12 +69,10 @@ def recognize_cam_face():
         face_locations = face_recognition.face_locations(rgb_small_frame)
         face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
 
-        face_names = []
         match_attempt = 0
         for face_encoding in face_encodings:
             # See if the face is a match for the known face(s)
             matches = face_recognition.compare_faces(known_face_encodings, face_encoding)
-            emp = None
 
             # # If a match was found in known_face_encodings, just use the first one.
             # if True in matches:
@@ -85,30 +83,32 @@ def recognize_cam_face():
             face_distances = face_recognition.face_distance(known_face_encodings, face_encoding)
             best_match_index = np.argmin(face_distances)
             if matches[best_match_index]:
-                emp = known_face_names[best_match_index]
+                face_names.append(known_face_names[best_match_index])
+                print("match found")
+                print(face_names)
 
-            if emp:
-                face_names.append(emp)
+            if len(face_names) > 5:
                 match_found = True
                 video_capture.release()
                 cv2.destroyAllWindows()
-                return emp
+                return face_names
 
             if match_attempt == max_attemp_limit:
                 match_attempt = 0
-                break
+                video_capture.release()
+                cv2.destroyAllWindows()
+                return face_names
 
-            match_attempt = match_attempt+1
+            match_attempt = match_attempt + 1
 
         # Display the resulting image
         cv2.imshow('Video', frame)
 
-        # quit on match!
-        if match_found:
-            break
-
-        if match_tried == max_attemp_limit:
-            break
+        # if match found or max attemp limit exceed break the loop
+        if match_found or match_tried == max_attemp_limit:
+            video_capture.release()
+            cv2.destroyAllWindows()
+            return face_names
 
         match_tried = match_tried + 1
 
@@ -116,7 +116,7 @@ def recognize_cam_face():
     video_capture.release()
     cv2.destroyAllWindows()
 
-    return emp
+    return face_names
 
 
 @app.route('/')
@@ -126,11 +126,16 @@ def index():
 
 @app.route('/activity-ai')
 def activity_ai():
-    image_name = recognize_cam_face()
+    matches = recognize_cam_face()
     from_url = request.args.get('from',None)
+    emp_list = []
     emp_id = 0
+    for match in matches:
+        emp_list.append(match.split('_')[0])
+    if len(emp_list):
+        emp_id = max(emp_list, key=emp_list.count)
+
     if from_url:
-        if image_name:
-            emp_id = image_name.split('.')[0]
         return redirect(from_url+'?emp_id='+str(emp_id))
-    return render_template('signin.html', activity=True, emp_id=image_name)
+
+    return render_template('signin.html', activity=True, emp_id=emp_id)
