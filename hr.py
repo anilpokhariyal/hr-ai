@@ -51,10 +51,8 @@ def recognize_cam_face():
     face_encodings = []
     face_names = []
     max_attemp_limit = 10
-    match_found = False
-    emp = None
     match_tried = 0
-    while not match_found:
+    while match_tried <= max_attemp_limit:
         # Grab a single frame of video
         ret, frame = video_capture.read()
 
@@ -64,57 +62,34 @@ def recognize_cam_face():
         # Convert the image from BGR color (which OpenCV uses) to RGB color (which face_recognition uses)
         rgb_small_frame = small_frame[:, :, ::-1]
 
-        # Only process every other frame of video to save time
         # Find all the faces and face encodings in the current frame of video
         face_locations = face_recognition.face_locations(rgb_small_frame)
         face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
 
-        match_attempt = 0
+        # if not face detected in cam, still process so we can terminate the loop
+        if len(face_encodings) == 0:
+            match_tried = match_tried + 1
+
+        # loop through face encodings to match with stored encodings
         for face_encoding in face_encodings:
             # See if the face is a match for the known face(s)
             matches = face_recognition.compare_faces(known_face_encodings, face_encoding)
 
-            # # If a match was found in known_face_encodings, just use the first one.
-            # if True in matches:
-            #     first_match_index = matches.index(True)
-            #     name = known_face_names[first_match_index]
-
-            # Or instead, use the known face with the smallest distance to the new face
+            # get the known face with the smallest distance to the new face
             face_distances = face_recognition.face_distance(known_face_encodings, face_encoding)
             best_match_index = np.argmin(face_distances)
             if matches[best_match_index]:
                 face_names.append(known_face_names[best_match_index])
-                print("match found")
-                print(face_names)
 
-            if len(face_names) > 5:
-                match_found = True
+            if len(face_names) > 5 or match_tried == max_attemp_limit:
                 video_capture.release()
                 cv2.destroyAllWindows()
                 return face_names
 
-            if match_attempt == max_attemp_limit:
-                match_attempt = 0
-                video_capture.release()
-                cv2.destroyAllWindows()
-                return face_names
-
-            match_attempt = match_attempt + 1
+            match_tried = match_tried + 1
 
         # Display the resulting image
-        cv2.imshow('Video', frame)
-
-        # if match found or max attemp limit exceed break the loop
-        if match_found or match_tried == max_attemp_limit:
-            video_capture.release()
-            cv2.destroyAllWindows()
-            return face_names
-
-        match_tried = match_tried + 1
-
-    # Release handle to the webcam
-    video_capture.release()
-    cv2.destroyAllWindows()
+        # cv2.imshow('Video', frame)
 
     return face_names
 
@@ -127,7 +102,7 @@ def index():
 @app.route('/activity-ai')
 def activity_ai():
     matches = recognize_cam_face()
-    from_url = request.args.get('from',None)
+    from_url = request.args.get('from', None)
     emp_list = []
     emp_id = 0
     for match in matches:
@@ -136,6 +111,6 @@ def activity_ai():
         emp_id = max(emp_list, key=emp_list.count)
 
     if from_url:
-        return redirect(from_url+'?emp_id='+str(emp_id))
+        return redirect(from_url + '?emp_id=' + str(emp_id))
 
     return render_template('signin.html', activity=True, emp_id=emp_id)
