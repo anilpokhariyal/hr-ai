@@ -1,0 +1,25 @@
+version: '3'
+volumes:
+  mysql:
+    driver: local
+
+services:
+### HR-AI ###############################################
+    hr-ai:
+      build:
+        context: ../
+        dockerfile: docker/Dockerfile
+      networks:
+        - hr_network
+      container_name: hr-ai
+      environment:
+        - GUNICORN_WORKERS=2
+      volumes: ['/var/www/hr-ai:/app']
+      ports:
+        - '5001:5001'
+      devices:
+        - /dev/video0:/dev/video0
+networks:
+  hr_network:
+    external:
+      name: hr_network

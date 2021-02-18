@@ -46,6 +46,7 @@ known_face_encodings, known_face_names = known_faces()
 def recognize_cam_face():
     # Get a reference to webcam #0 (the default one)
     video_capture = cv2.VideoCapture(0)
+
     # Initialize live face recognition variables
     face_locations = []
     face_encodings = []
@@ -114,3 +115,11 @@ def activity_ai():
         return redirect(from_url + '?emp_id=' + str(emp_id))
 
     return render_template('signin.html', activity=True, emp_id=emp_id)
+
+
+###############################################################################
+# Entry point
+###############################################################################
+
+if __name__ == '__main__':
+    app.run(host="0.0.0.0", debug=True)
