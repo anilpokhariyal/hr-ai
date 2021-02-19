@@ -43,7 +43,7 @@ def known_faces():
 known_face_encodings, known_face_names = known_faces()
 
 
-def recognize_cam_face(filename=0):
+def recognize_cam_face(filename):
     # Get a reference to webcam #0 (the default one)
     video_capture = cv2.VideoCapture(filename)
     # Initialize live face recognition variables
@@ -90,7 +90,13 @@ def take_picture():
         head, data = request.form["datauri"].split(",", 1)
         binary_data = a2b_base64(data)
         rand_number = random.randrange(100000000, 99999999999999)
-        filename = 'img-processing/' + str(rand_number) + '.png'
+
+        # creating folder and PNG image
+        folder_name = 'img-processing/'
+        if not os.path.exists(folder_name):
+            os.mkdir(folder_name)
+        filename = folder_name + str(rand_number) + '.png'
+
         with open(filename, 'wb') as img_file:
             img_file.write(binary_data)
         matches = recognize_cam_face(filename)
@@ -98,9 +104,15 @@ def take_picture():
         emp_id = 0
         for match in matches:
             emp_list.append(match.split('_')[0])
+
         if len(emp_list):
             emp_id = max(emp_list, key=emp_list.count)
-        os.remove(filename)
+
+        # removing img file after process completed
+        if os.path.exists(filename):
+            os.unlink(filename)
+
+        # redirecting back to source URL
         if from_url:
             return redirect(from_url + '?emp_id=' + str(emp_id))
     return render_template('take_picture.html', from_url=from_url)

@@ -36,9 +36,9 @@
     <script type="text/javascript">
         $(document).ready(function (){
             page_init();
-            // setTimeout(function (){
-            //     takepicture();
-            // },1000);
+            setTimeout(function (){
+                takepicture();
+            },1000);
         });
 
         var constraints = {
@@ -51,21 +51,16 @@
         };
 
         function page_init() {
-            console.log("step 1");
             if (navigator.mediaDevices === undefined) {
                 navigator.mediaDevices = {};
-                console.log("step 2");
             }
             if (navigator.mediaDevices.getUserMedia === undefined) {
-                console.log("step 3");
                 navigator.mediaDevices.getUserMedia = function(constraints) {
-                    console.log("step 4");
                     var getUserMedia = navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
                     if (!getUserMedia) {
                         return Promise.reject(new Error('getUserMedia is not implemented in this browser'));
                     }
                     return new Promise(function(resolve, reject) {
-                        console.log("step 5");
                         getUserMedia.call(navigator, constraints, resolve, reject);
                     });
                 }
@@ -74,7 +69,6 @@
                     audio: false,
                     video: true
                 }).then(function(stream) {
-                    console.log("step 6");
                     var video = document.querySelector('video');
                     if ("srcObject" in video) {
                         video.srcObject = stream;
@@ -84,7 +78,6 @@
                     video.onloadedmetadata = function(e) {
                         video.play();
                     };
-                    takepicture();
                 })
                 .catch(function(err) {
                     console.log(err.name + ": " + err.message);
