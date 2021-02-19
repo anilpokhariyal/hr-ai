@@ -3,7 +3,7 @@ from flask import render_template
 import face_recognition
 import cv2
 import numpy as np
-import os, json
+import os, json, random
 from os import path
 import pickle
 
@@ -43,56 +43,67 @@ def known_faces():
 known_face_encodings, known_face_names = known_faces()
 
 
-def recognize_cam_face():
+def recognize_cam_face(filename=0):
     # Get a reference to webcam #0 (the default one)
-    video_capture = cv2.VideoCapture(0)
-
+    video_capture = cv2.VideoCapture(filename)
     # Initialize live face recognition variables
     face_locations = []
     face_encodings = []
     face_names = []
-    max_attemp_limit = 10
-    match_tried = 0
-    while match_tried <= max_attemp_limit:
-        # Grab a single frame of video
-        ret, frame = video_capture.read()
+    # Grab a single frame of video
+    ret, frame = video_capture.read()
+    # Resize frame of video to 1/4 size for faster face recognition processing
+    small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
 
-        # Resize frame of video to 1/4 size for faster face recognition processing
-        small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
+    # Convert the image from BGR color (which OpenCV uses) to RGB color (which face_recognition uses)
+    rgb_small_frame = small_frame[:, :, ::-1]
 
-        # Convert the image from BGR color (which OpenCV uses) to RGB color (which face_recognition uses)
-        rgb_small_frame = small_frame[:, :, ::-1]
+    # Find all the faces and face encodings in the current frame of video
+    face_locations = face_recognition.face_locations(rgb_small_frame)
+    face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
 
-        # Find all the faces and face encodings in the current frame of video
-        face_locations = face_recognition.face_locations(rgb_small_frame)
-        face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
+    # loop through face encodings to match with stored encodings
+    for face_encoding in face_encodings:
+        # See if the face is a match for the known face(s)
+        matches = face_recognition.compare_faces(known_face_encodings, face_encoding)
 
-        # if not face detected in cam, still process so we can terminate the loop
-        if len(face_encodings) == 0:
-            match_tried = match_tried + 1
+        # get the known face with the smallest distance to the new face
+        face_distances = face_recognition.face_distance(known_face_encodings, face_encoding)
+        best_match_index = np.argmin(face_distances)
+        if matches[best_match_index]:
+            face_names.append(known_face_names[best_match_index])
 
-        # loop through face encodings to match with stored encodings
-        for face_encoding in face_encodings:
-            # See if the face is a match for the known face(s)
-            matches = face_recognition.compare_faces(known_face_encodings, face_encoding)
-
-            # get the known face with the smallest distance to the new face
-            face_distances = face_recognition.face_distance(known_face_encodings, face_encoding)
-            best_match_index = np.argmin(face_distances)
-            if matches[best_match_index]:
-                face_names.append(known_face_names[best_match_index])
-
-            if len(face_names) > 5 or match_tried == max_attemp_limit:
-                video_capture.release()
-                cv2.destroyAllWindows()
-                return face_names
-
-            match_tried = match_tried + 1
-
-        # Display the resulting image
-        # cv2.imshow('Video', frame)
+        if len(face_names) > 5 :
+            video_capture.release()
+            cv2.destroyAllWindows()
+            return face_names
 
     return face_names
+
+
+@app.route('/take_picture', methods=["GET", "POST"])
+def take_picture():
+    picture = request.form.get('datauri')
+    from_url = request.values.get('from', None)
+    if picture:
+        from binascii import a2b_base64
+        head, data = request.form["datauri"].split(",", 1)
+        binary_data = a2b_base64(data)
+        rand_number = random.randrange(100000000, 99999999999999)
+        filename = 'img-processing/' + str(rand_number) + '.png'
+        with open(filename, 'wb') as img_file:
+            img_file.write(binary_data)
+        matches = recognize_cam_face(filename)
+        emp_list = []
+        emp_id = 0
+        for match in matches:
+            emp_list.append(match.split('_')[0])
+        if len(emp_list):
+            emp_id = max(emp_list, key=emp_list.count)
+        os.remove(filename)
+        if from_url:
+            return redirect(from_url + '?emp_id=' + str(emp_id))
+    return render_template('take_picture.html', from_url=from_url)
 
 
 @app.route('/')

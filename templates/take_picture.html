@@ -1,0 +1,118 @@
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="Anil Pokhariyal">
+    <title>HR Artificial Intelligence</title>
+
+
+    <!-- Bootstrap core CSS -->
+<link href="/static/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BmbxuPwQa2lc/FVzBcNJ7UAyJxM6wuqIj61tLrc4wSX0szH/Ev+nYRRuWlolflfl" crossorigin="anonymous">
+
+<meta name="theme-color" content="#7952b3">
+
+    <!-- Custom styles for this template -->
+    <link href="/static/theme.css" rel="stylesheet">
+  </head>
+  <body>
+
+    <div class="row">
+        <div class="col-md-12">
+            <form method="POST" id="picture_form" name="picture_form" action="#">
+                <canvas id="canvas" style="display:none"></canvas>
+                <input type="hidden" name="datauri" value="" id="datauri">
+                <video id="player" autoplay="true" muted="muted"></video>
+                <input type="hidden" name="from_url">
+            </form>
+        </div>
+    </div>
+<script src="https://code.jquery.com/jquery-2.2.2.min.js"
+          integrity="sha256-36cp2Co+/62rEAAYHLmRCPIych47CvdM+uTBJwSzWjI="
+          crossorigin="anonymous"></script>
+  <script src="/static/js/bootstrap.bundle.min.js" integrity="sha384-b5kHyXgcpbZJO/tY9Ul7kGkf1S0CWuKcCD38l8YkeH8z8QjE0GmW1gYU5S9FOnJ0" crossorigin="anonymous"></script>
+    <script type="text/javascript">
+        $(document).ready(function (){
+            page_init();
+            // setTimeout(function (){
+            //     takepicture();
+            // },1000);
+        });
+
+        var constraints = {
+            audio: false,
+            video: {
+                width: 1024,
+                height: 900,
+                facingMode: "user"
+            }
+        };
+
+        function page_init() {
+            console.log("step 1");
+            if (navigator.mediaDevices === undefined) {
+                navigator.mediaDevices = {};
+                console.log("step 2");
+            }
+            if (navigator.mediaDevices.getUserMedia === undefined) {
+                console.log("step 3");
+                navigator.mediaDevices.getUserMedia = function(constraints) {
+                    console.log("step 4");
+                    var getUserMedia = navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+                    if (!getUserMedia) {
+                        return Promise.reject(new Error('getUserMedia is not implemented in this browser'));
+                    }
+                    return new Promise(function(resolve, reject) {
+                        console.log("step 5");
+                        getUserMedia.call(navigator, constraints, resolve, reject);
+                    });
+                }
+            }
+            navigator.mediaDevices.getUserMedia({
+                    audio: false,
+                    video: true
+                }).then(function(stream) {
+                    console.log("step 6");
+                    var video = document.querySelector('video');
+                    if ("srcObject" in video) {
+                        video.srcObject = stream;
+                    } else {
+                        video.src = window.URL.createObjectURL(stream);
+                    }
+                    video.onloadedmetadata = function(e) {
+                        video.play();
+                    };
+                    takepicture();
+                })
+                .catch(function(err) {
+                    console.log(err.name + ": " + err.message);
+                });
+
+        }
+
+        function takepicture() {
+            var video = document.getElementById('player');
+            var canvas = document.getElementById('canvas');
+
+            var width = 1024;
+            var height = 900;
+            var context = canvas.getContext('2d');
+            if (width && height) {
+                canvas.width = width;
+                canvas.height = height;
+                context.drawImage(video, 0, 0, width, height);
+
+                var data = canvas.toDataURL('image/png');
+
+                $("#datauri").val(data);
+                $("#picture_form").submit();
+
+            } else {
+                alert("null width and height");
+            }
+        }
+    </script>
+  </body>
+</html>
