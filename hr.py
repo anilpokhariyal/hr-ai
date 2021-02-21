@@ -84,9 +84,10 @@ def recognize_cam_face(filename):
 @app.route('/take_picture', methods=["GET", "POST"])
 def take_picture():
     from_url = request.values.get('from', None)
+    min_matches = os.getenv("MIN_MATCHES", 3)
     emp_id = 0
     matched_emp = []
-    for i in range(1,3):
+    for i in range(1,min_matches):
         picture = request.form.get('datauri_'+str(i))
 
         if picture:
@@ -122,7 +123,7 @@ def take_picture():
     if from_url and emp_id:
         return redirect(from_url + '?emp_id=' + str(emp_id))
 
-    return render_template('take_picture.html', from_url=from_url)
+    return render_template('take_picture.html', from_url=from_url, min_matches=min_matches)
 
 
 @app.route('/')

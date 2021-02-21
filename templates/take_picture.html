@@ -26,6 +26,7 @@
                 <input type="hidden" name="datauri_1" value="" id="datauri_1">
                 <input type="hidden" name="datauri_2" value="" id="datauri_2">
                 <input type="hidden" name="datauri_3" value="" id="datauri_3">
+                <input type="hidden" id="min_matches" value="{{min_matches}}">
                 <video id="player" autoplay="true" muted="muted"></video>
                 <input type="hidden" name="from_url">
             </form>
@@ -94,7 +95,8 @@
             var width = 1024;
             var height = 900;
             var context = '';
-            for (let index=1;index<4;index++) {
+            let min_matches = $('#min_matches').val();
+            for (let index=1;index<=min_matches;index++) {
                 context = canvas.getContext('2d');
                 canvas.width = width;
                 canvas.height = height;
