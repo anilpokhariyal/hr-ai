@@ -23,7 +23,9 @@
         <div class="col-md-12">
             <form method="POST" id="picture_form" name="picture_form" action="#">
                 <canvas id="canvas" style="display:none"></canvas>
-                <input type="hidden" name="datauri" value="" id="datauri">
+                <input type="hidden" name="datauri_1" value="" id="datauri_1">
+                <input type="hidden" name="datauri_2" value="" id="datauri_2">
+                <input type="hidden" name="datauri_3" value="" id="datauri_3">
                 <video id="player" autoplay="true" muted="muted"></video>
                 <input type="hidden" name="from_url">
             </form>
@@ -91,20 +93,18 @@
 
             var width = 1024;
             var height = 900;
-            var context = canvas.getContext('2d');
-            if (width && height) {
+            var context = '';
+            for (let index=1;index<4;index++) {
+                context = canvas.getContext('2d');
                 canvas.width = width;
                 canvas.height = height;
                 context.drawImage(video, 0, 0, width, height);
-
                 var data = canvas.toDataURL('image/png');
 
-                $("#datauri").val(data);
-                $("#picture_form").submit();
-
-            } else {
-                alert("null width and height");
+                $("#datauri_"+index).val(data);
             }
+            $("#picture_form").submit();
+
         }
     </script>
   </body>

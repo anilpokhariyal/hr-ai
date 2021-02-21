@@ -83,38 +83,45 @@ def recognize_cam_face(filename):
 
 @app.route('/take_picture', methods=["GET", "POST"])
 def take_picture():
-    picture = request.form.get('datauri')
     from_url = request.values.get('from', None)
-    if picture:
-        from binascii import a2b_base64
-        head, data = request.form["datauri"].split(",", 1)
-        binary_data = a2b_base64(data)
-        rand_number = random.randrange(100000000, 99999999999999)
+    emp_id = 0
+    matched_emp = []
+    for i in range(1,3):
+        picture = request.form.get('datauri_'+str(i))
 
-        # creating folder and PNG image
-        folder_name = 'img-processing/'
-        if not os.path.exists(folder_name):
-            os.mkdir(folder_name)
-        filename = folder_name + str(rand_number) + '.png'
+        if picture:
+            from binascii import a2b_base64
+            head, data = picture.split(",", 1)
+            binary_data = a2b_base64(data)
+            rand_number = random.randrange(100000000, 99999999999999)
 
-        with open(filename, 'wb') as img_file:
-            img_file.write(binary_data)
-        matches = recognize_cam_face(filename)
-        emp_list = []
-        emp_id = 0
-        for match in matches:
-            emp_list.append(match.split('_')[0])
+            # creating folder and PNG image
+            folder_name = 'img-processing/'
+            if not os.path.exists(folder_name):
+                os.mkdir(folder_name)
+            filename = folder_name + str(rand_number) + '.png'
 
-        if len(emp_list):
-            emp_id = max(emp_list, key=emp_list.count)
+            with open(filename, 'wb') as img_file:
+                img_file.write(binary_data)
+            matches = recognize_cam_face(filename)
+            emp_list = []
 
-        # removing img file after process completed
-        if os.path.exists(filename):
-            os.unlink(filename)
+            for match in matches:
+                emp_list.append(match.split('_')[0])
 
-        # redirecting back to source URL
-        if from_url:
-            return redirect(from_url + '?emp_id=' + str(emp_id))
+            if len(emp_list):
+                emp_id = max(emp_list, key=emp_list.count)
+                matched_emp.append(emp_id)
+
+            # removing img file after process completed
+            if os.path.exists(filename):
+                os.unlink(filename)
+    if len(matched_emp):
+        emp_id = max(matched_emp, key=matched_emp.count)
+    # redirecting back to source URL
+    if from_url and emp_id:
+        return redirect(from_url + '?emp_id=' + str(emp_id))
+
     return render_template('take_picture.html', from_url=from_url)
 
 
